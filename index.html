@@ -1,12 +1,1537 @@
 <!DOCTYPE html>
-  <html lang="es">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>mibot247</title>
-  </head>
-  <body>
-    <h1>Bienvenido a mibot247</h1>
-  <p>Sitio web en construcción.</p>
-  </body>
-  </html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BotControl</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080a0f;
+  --s1: #0d1018;
+  --s2: #131620;
+  --s3: #191d28;
+  --s4: #1f2330;
+  --border: #252a38;
+  --border2: #2e3445;
+  --a1: #3b82f6;
+  --a2: #10b981;
+  --a3: #f59e0b;
+  --a4: #ef4444;
+  --a5: #8b5cf6;
+  --t1: #e2e8f8;
+  --t2: #7c85a0;
+  --t3: #454d66;
+  --r: 10px;
+  --rs: 7px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;overflow:hidden;}
+
+/* LOGIN */
+#login-screen{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:var(--bg);z-index:1000;
+  background-image: radial-gradient(ellipse at 20% 50%, rgba(59,130,246,.08) 0%, transparent 60%),
+                    radial-gradient(ellipse at 80% 20%, rgba(139,92,246,.06) 0%, transparent 50%);
+}
+.login-box{
+  width:380px;background:var(--s1);border:1px solid var(--border2);
+  border-radius:16px;padding:40px;
+  box-shadow:0 40px 80px rgba(0,0,0,.6);
+}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:32px;}
+.login-logo-icon{
+  width:42px;height:42px;border-radius:12px;
+  background:linear-gradient(135deg,var(--a1),var(--a5));
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+}
+.login-logo-text{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.5px;}
+.login-logo-sub{font-size:11px;color:var(--t3);font-family:'DM Mono',monospace;}
+.login-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:600;margin-bottom:6px;}
+.login-sub{font-size:13px;color:var(--t2);margin-bottom:28px;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:12px;color:var(--t2);font-weight:500;margin-bottom:6px;}
+.field input{
+  width:100%;background:var(--s3);border:1px solid var(--border2);
+  border-radius:var(--rs);padding:11px 14px;color:var(--t1);
+  font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none;
+  transition:border-color .2s;
+}
+.field input:focus{border-color:var(--a1);}
+.btn-login{
+  width:100%;padding:12px;background:var(--a1);border:none;border-radius:var(--rs);
+  color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:600;
+  cursor:pointer;transition:all .2s;margin-top:4px;letter-spacing:.3px;
+}
+.btn-login:hover{background:#2563eb;transform:translateY(-1px);}
+.login-error{
+  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
+  border-radius:var(--rs);padding:10px 14px;font-size:12.5px;color:var(--a4);
+  margin-top:12px;display:none;
+}
+
+/* APP SHELL */
+#app{display:none;height:100vh;display:none;flex-direction:row;}
+#app.visible{display:flex;}
+
+/* SIDEBAR */
+.sb{
+  width:220px;min-width:220px;background:var(--s1);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;height:100vh;
+}
+.sb-logo{
+  padding:20px 16px 16px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border);
+}
+.sb-logo-icon{
+  width:32px;height:32px;border-radius:9px;
+  background:linear-gradient(135deg,var(--a1),var(--a5));
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+  flex-shrink:0;
+}
+.sb-logo-text{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;letter-spacing:-.3px;}
+.sb-logo-badge{
+  margin-left:auto;font-size:9px;font-family:'DM Mono',monospace;
+  background:rgba(59,130,246,.15);color:var(--a1);
+  padding:2px 6px;border-radius:20px;border:1px solid rgba(59,130,246,.2);
+}
+
+.sb-section{padding:14px 10px 6px;}
+.sb-section-label{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1.2px;padding:0 8px 7px;font-weight:500;}
+.nav{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 10px;border-radius:var(--rs);cursor:pointer;
+  font-size:13px;color:var(--t2);transition:all .15s;margin-bottom:1px;
+}
+.nav:hover{background:var(--s3);color:var(--t1);}
+.nav.on{background:rgba(59,130,246,.12);color:var(--a1);}
+.nav-ic{font-size:14px;width:16px;text-align:center;}
+.nav-badge{
+  margin-left:auto;background:var(--a4);color:#fff;
+  font-size:9px;font-weight:700;padding:1px 5px;border-radius:20px;
+}
+
+.sb-clients{
+  padding:10px;border-top:1px solid var(--border);margin-top:auto;
+}
+.sb-clients-label{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1.2px;padding:0 4px 8px;}
+.cc{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 8px;border-radius:var(--rs);cursor:pointer;
+  transition:background .15s;margin-bottom:3px;
+}
+.cc:hover{background:var(--s3);}
+.cc.sel{background:var(--s4);}
+.cc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.cc-name{font-size:12px;color:var(--t2);flex:1;}
+.cc-on{font-size:9px;font-family:'DM Mono',monospace;}
+.cc-on.y{color:var(--a2);}
+.cc-on.n{color:var(--t3);}
+
+.sb-user{
+  padding:12px;border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:9px;
+}
+.sb-avatar{
+  width:30px;height:30px;border-radius:50%;
+  background:linear-gradient(135deg,var(--a1),var(--a5));
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;flex-shrink:0;
+}
+.sb-user-info{flex:1;min-width:0;}
+.sb-user-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb-user-role{font-size:10px;color:var(--a1);}
+.btn-logout{
+  background:none;border:none;color:var(--t3);cursor:pointer;
+  font-size:14px;padding:4px;border-radius:5px;transition:color .15s;
+}
+.btn-logout:hover{color:var(--a4);}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;min-width:0;}
+
+/* TOPBAR */
+.topbar{
+  padding:14px 24px;display:flex;align-items:center;gap:12px;
+  border-bottom:1px solid var(--border);background:var(--s1);flex-shrink:0;
+}
+.topbar-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;}
+.topbar-sep{color:var(--t3);font-size:12px;}
+.topbar-client{font-size:12px;color:var(--t2);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.btn{
+  padding:7px 14px;border-radius:var(--rs);border:none;
+  font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:500;
+  cursor:pointer;transition:all .15s;
+}
+.btn-p{background:var(--a1);color:#fff;}
+.btn-p:hover{background:#2563eb;}
+.btn-g{background:transparent;color:var(--t2);border:1px solid var(--border2);}
+.btn-g:hover{background:var(--s3);color:var(--t1);}
+.btn-d{background:rgba(239,68,68,.1);color:var(--a4);border:1px solid rgba(239,68,68,.2);}
+.btn-d:hover{background:rgba(239,68,68,.2);}
+.btn-sm{padding:5px 10px;font-size:11.5px;}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:22px 24px;}
+.content::-webkit-scrollbar{width:4px;}
+.content::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* PAGES */
+.page{display:none;}
+.page.on{display:block;}
+
+/* CARDS */
+.card{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:var(--r);padding:18px;
+}
+.card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.card-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;}
+.card-sub{font-size:11px;color:var(--t3);margin-top:2px;}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px;}
+
+/* STATS */
+.stat{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;}
+.stat:hover{border-color:var(--a1);}
+.stat-label{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;}
+.stat-val{font-size:24px;font-weight:600;font-family:'Syne',sans-serif;letter-spacing:-1px;margin-bottom:3px;}
+.stat-ch{font-size:11px;}
+.up{color:var(--a2);}
+.dn{color:var(--a4);}
+
+/* TABS */
+.tabs{display:flex;gap:3px;margin-bottom:18px;background:var(--s2);padding:3px;border-radius:var(--rs);width:fit-content;}
+.tab{padding:7px 16px;border-radius:6px;font-size:12.5px;cursor:pointer;color:var(--t2);transition:all .15s;font-weight:500;}
+.tab.on{background:var(--s4);color:var(--t1);}
+.tab:hover:not(.on){color:var(--t1);}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:10.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);}
+.tbl td{padding:12px 12px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:var(--s2);}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:10.5px;font-weight:500;}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;}
+.badge-g{background:rgba(16,185,129,.1);color:var(--a2);}
+.badge-r{background:rgba(239,68,68,.1);color:var(--a4);}
+.badge-y{background:rgba(245,158,11,.1);color:var(--a3);}
+.badge-b{background:rgba(59,130,246,.1);color:var(--a1);}
+.badge-p{background:rgba(139,92,246,.1);color:var(--a5);}
+
+/* FORMS */
+.frow{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.frow label{font-size:11.5px;color:var(--t2);font-weight:500;}
+.finput{
+  background:var(--s3);border:1px solid var(--border2);
+  border-radius:var(--rs);padding:9px 12px;
+  color:var(--t1);font-family:'DM Sans',sans-serif;font-size:13px;
+  outline:none;transition:border-color .15s;width:100%;
+}
+.finput:focus{border-color:var(--a1);}
+.fselect{
+  background:var(--s3);border:1px solid var(--border2);
+  border-radius:var(--rs);padding:9px 12px;
+  color:var(--t1);font-family:'DM Sans',sans-serif;font-size:13px;
+  outline:none;width:100%;cursor:pointer;
+}
+.ftextarea{
+  background:var(--s3);border:1px solid var(--border2);
+  border-radius:var(--rs);padding:9px 12px;
+  color:var(--t1);font-family:'DM Sans',sans-serif;font-size:13px;
+  outline:none;width:100%;resize:vertical;min-height:80px;
+  transition:border-color .15s;
+}
+.ftextarea:focus{border-color:var(--a1);}
+
+/* TOGGLE */
+.trow{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);}
+.trow:last-child{border-bottom:none;}
+.tinfo-title{font-size:13px;font-weight:500;}
+.tinfo-desc{font-size:11px;color:var(--t3);margin-top:2px;}
+.toggle{width:38px;height:21px;border-radius:11px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
+.toggle.on{background:var(--a2);}
+.toggle.off{background:var(--border2);}
+.toggle::after{content:'';position:absolute;top:2.5px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;}
+.toggle.on::after{left:19px;}
+.toggle.off::after{left:2.5px;}
+
+/* KB ITEMS */
+.kb-item{display:flex;align-items:flex-start;gap:11px;padding:11px 0;border-bottom:1px solid var(--border);}
+.kb-item:last-child{border-bottom:none;}
+.kb-ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.kb-ic.faq{background:rgba(59,130,246,.12);}
+.kb-ic.doc{background:rgba(16,185,129,.12);}
+.kb-ic.url{background:rgba(245,158,11,.12);}
+.kb-body{flex:1;min-width:0;}
+.kb-title{font-size:13px;font-weight:500;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.kb-meta{font-size:11px;color:var(--t3);}
+.kb-acts{display:flex;gap:5px;}
+.ib{width:26px;height:26px;border-radius:6px;border:1px solid var(--border2);background:none;color:var(--t3);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.ib:hover{background:var(--s3);color:var(--t1);}
+
+/* CONV */
+.conv{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.conv:hover .conv-prev{color:var(--t1);}
+.conv:last-child{border-bottom:none;}
+.conv-av{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;}
+.conv-name{font-size:13px;font-weight:500;margin-bottom:2px;}
+.conv-prev{font-size:11.5px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.conv-r{text-align:right;flex-shrink:0;}
+.conv-time{font-size:10.5px;color:var(--t3);margin-bottom:5px;}
+
+/* UNANS */
+.unans{
+  background:var(--s2);border-radius:var(--rs);
+  padding:11px 13px;margin-bottom:7px;
+  display:flex;align-items:center;gap:11px;
+  border-left:3px solid var(--a4);
+}
+.unans-text{flex:1;font-size:12.5px;}
+.unans-count{font-size:10px;color:var(--t3);font-family:'DM Mono',monospace;}
+.btn-add-kb{
+  padding:4px 9px;background:rgba(59,130,246,.12);color:var(--a1);
+  border:none;border-radius:5px;font-size:11px;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:background .15s;
+}
+.btn-add-kb:hover{background:rgba(59,130,246,.22);}
+
+/* ALERT */
+.alert{
+  background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);
+  border-radius:var(--rs);padding:10px 13px;
+  font-size:12px;color:var(--a3);margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;
+}
+
+/* MODAL */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);
+  display:none;align-items:center;justify-content:center;z-index:500;
+  backdrop-filter:blur(3px);
+}
+.modal-bg.open{display:flex;}
+.modal{
+  background:var(--s2);border:1px solid var(--border2);
+  border-radius:14px;padding:28px;width:460px;max-width:90vw;
+  box-shadow:0 30px 60px rgba(0,0,0,.5);
+}
+.modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;}
+.modal-sub{font-size:12.5px;color:var(--t2);margin-bottom:22px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
+
+/* CHANNEL CARD */
+.ch-card{
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:var(--r);padding:14px;display:flex;align-items:center;gap:13px;
+  margin-bottom:10px;
+}
+.ch-ic{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+.ch-ic.wa{background:rgba(37,211,102,.12);}
+.ch-ic.web{background:rgba(59,130,246,.12);}
+.ch-name{font-size:13px;font-weight:600;margin-bottom:2px;}
+.ch-desc{font-size:11px;color:var(--t3);}
+
+/* BARS */
+.bar-chart{display:flex;align-items:flex-end;gap:5px;height:70px;margin:10px 0;}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.bar{width:100%;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--a1) 0%,rgba(59,130,246,.2) 100%);transition:height .3s;}
+.bar-label{font-size:9px;color:var(--t3);font-family:'DM Mono',monospace;}
+
+/* MINI STAT */
+.ms{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border);}
+.ms:last-child{border-bottom:none;}
+.ms-ic{font-size:14px;width:18px;text-align:center;}
+.ms-label{font-size:12px;color:var(--t2);flex:1;}
+.ms-bar{width:70px;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.ms-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--a2),var(--a1));}
+.ms-val{font-size:12px;font-weight:600;font-family:'DM Mono',monospace;width:30px;text-align:right;}
+
+/* CODE BLOCK */
+.code-block{
+  background:var(--s3);border:1px solid var(--border);
+  border-radius:var(--rs);padding:12px;
+  font-family:'DM Mono',monospace;font-size:11px;color:var(--a2);
+  position:relative;margin-top:8px;line-height:1.6;
+}
+
+/* ROLES TABLE */
+.roles-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.role-card{background:var(--s2);border:1px solid var(--border);border-radius:var(--rs);padding:14px;}
+.role-name{font-size:12.5px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.perm-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;font-size:11.5px;color:var(--t2);border-bottom:1px solid var(--border);}
+.perm-row:last-child{border-bottom:none;}
+
+/* LOG */
+.log-item{display:flex;gap:11px;padding:9px 0;border-bottom:1px solid var(--border);}
+.log-item:last-child{border-bottom:none;}
+.log-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.log-text{font-size:12.5px;flex:1;}
+.log-time{font-size:10.5px;color:var(--t3);font-family:'DM Mono',monospace;}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--s3);border:1px solid var(--border2);
+  border-radius:var(--rs);padding:12px 16px;
+  font-size:13px;display:flex;align-items:center;gap:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:999;
+  transform:translateY(80px);opacity:0;transition:all .3s;
+}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* ANIM */
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.page.on > *{animation:fadeUp .25s ease forwards;}
+
+/* SCROLLABLE */
+.scroll{max-height:300px;overflow-y:auto;}
+.scroll::-webkit-scrollbar{width:3px;}
+.scroll::-webkit-scrollbar-thumb{background:var(--border2);}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:40px;color:var(--t3);}
+.empty-icon{font-size:32px;margin-bottom:10px;}
+.empty-text{font-size:13px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">🤖</div>
+      <div>
+        <div class="login-logo-text">BotControl</div>
+        <div class="login-logo-sub">panel maestro</div>
+      </div>
+    </div>
+    <div class="login-title">Iniciar sesión</div>
+    <div class="login-sub">Acceso restringido a administradores</div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="admin@botcontrol.app" />
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••••" />
+    </div>
+    <button class="btn-login" onclick="doLogin()">Entrar al panel →</button>
+    <div class="login-error" id="login-error">Email o contraseña incorrectos</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sb">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🤖</div>
+      <div class="sb-logo-text">BotControl</div>
+      <div class="sb-logo-badge">SUPER</div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-section-label">Sistema</div>
+      <div class="nav on" onclick="goPage('dashboard',this)"><span class="nav-ic">📊</span>Dashboard</div>
+      <div class="nav" onclick="goPage('clientes',this)"><span class="nav-ic">🏢</span>Clientes</div>
+      <div class="nav" onclick="goPage('conversaciones',this)">
+        <span class="nav-ic">💬</span>Conversaciones
+        <span class="nav-badge" id="conv-badge">3</span>
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-section-label">Bot activo</div>
+      <div class="nav" onclick="goPage('conocimiento',this)"><span class="nav-ic">🧠</span>Conocimiento</div>
+      <div class="nav" onclick="goPage('configuracion',this)"><span class="nav-ic">⚙️</span>Configuración</div>
+      <div class="nav" onclick="goPage('canales',this)"><span class="nav-ic">🔌</span>Canales</div>
+      <div class="nav" onclick="goPage('roles',this)"><span class="nav-ic">👥</span>Roles</div>
+      <div class="nav" onclick="goPage('analitica',this)"><span class="nav-ic">📈</span>Analítica</div>
+      <div class="nav" onclick="goPage('historial',this)"><span class="nav-ic">📋</span>Historial</div>
+    </div>
+
+    <div class="sb-clients">
+      <div class="sb-clients-label">Clientes</div>
+      <div id="client-list"></div>
+      <div style="margin-top:8px;">
+        <button class="btn btn-g btn-sm" style="width:100%;font-size:11px;" onclick="openModal('modal-new-client')">+ Nuevo cliente</button>
+      </div>
+    </div>
+
+    <div class="sb-user">
+      <div class="sb-avatar" id="user-avatar">LA</div>
+      <div class="sb-user-info">
+        <div class="sb-user-name" id="user-name">Cargando...</div>
+        <div class="sb-user-role">Super Admin</div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()" title="Cerrar sesión">⏻</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="topbar-sep">·</div>
+      <div class="topbar-client" id="active-client-name">Puerto Delfín</div>
+      <div class="topbar-right">
+        <button class="btn btn-g btn-sm" onclick="toggleSandbox()">🧪 Modo prueba</button>
+        <button class="btn btn-p btn-sm" id="topbar-btn" onclick="topbarAction()">+ Nueva entrada</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page on" id="page-dashboard">
+        <div class="g4">
+          <div class="stat"><div class="stat-label">Consultas hoy</div><div class="stat-val" style="color:var(--a1)" id="s-today">—</div><div class="stat-ch up">↑ activo ahora</div></div>
+          <div class="stat"><div class="stat-label">Resueltas por bot</div><div class="stat-val" style="color:var(--a2)" id="s-rate">—</div><div class="stat-ch up">tasa de resolución</div></div>
+          <div class="stat"><div class="stat-label">Sin respuesta</div><div class="stat-val" style="color:var(--a4)" id="s-unans">—</div><div class="stat-ch dn">requieren entrenamiento</div></div>
+          <div class="stat"><div class="stat-label">Clientes activos</div><div class="stat-val" style="color:var(--a3)" id="s-clients">—</div><div class="stat-ch up">en producción</div></div>
+        </div>
+
+        <div class="g2">
+          <div class="card">
+            <div class="card-h">
+              <div><div class="card-title">Conversaciones recientes</div><div class="card-sub">Últimas 24 horas</div></div>
+              <button class="btn btn-g btn-sm" onclick="goPage('conversaciones',null)">Ver todas →</button>
+            </div>
+            <div class="scroll" id="dash-convs"></div>
+          </div>
+          <div class="card">
+            <div class="card-h">
+              <div><div class="card-title">⚠️ Sin respuesta</div><div class="card-sub">El bot no supo contestar</div></div>
+            </div>
+            <div class="alert">💡 Agregá estas preguntas a la base de conocimiento.</div>
+            <div id="dash-unans"></div>
+          </div>
+        </div>
+
+        <div class="g2">
+          <div class="card">
+            <div class="card-h"><div class="card-title">Canales activos</div></div>
+            <div class="ch-card">
+              <div class="ch-ic wa">📱</div>
+              <div style="flex:1"><div class="ch-name">WhatsApp Business</div><div class="ch-desc" id="dash-wa-desc">—</div></div>
+              <span class="badge badge-g">Activo</span>
+            </div>
+            <div class="ch-card">
+              <div class="ch-ic web">🌐</div>
+              <div style="flex:1"><div class="ch-name">Widget Web</div><div class="ch-desc" id="dash-web-desc">—</div></div>
+              <span class="badge badge-g">Activo</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-h"><div class="card-title">Actividad semanal</div></div>
+            <div class="bar-chart" id="dash-bars"></div>
+            <div style="font-size:10px;color:var(--t3);text-align:center">Conversaciones por día</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLIENTES -->
+      <div class="page" id="page-clientes">
+        <div class="card">
+          <div class="card-h">
+            <div><div class="card-title">Todos los clientes</div><div class="card-sub" id="clients-count">Cargando...</div></div>
+            <button class="btn btn-p btn-sm" onclick="openModal('modal-new-client')">+ Nuevo cliente</button>
+          </div>
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Bot</th>
+                <th>Estado</th>
+                <th>Canales</th>
+                <th>Plan</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="clients-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CONVERSACIONES -->
+      <div class="page" id="page-conversaciones">
+        <div class="tabs">
+          <div class="tab on" onclick="filterConvs('todas',this)">Todas</div>
+          <div class="tab" onclick="filterConvs('bot',this)">Bot</div>
+          <div class="tab" onclick="filterConvs('humano',this)">Humano</div>
+          <div class="tab" onclick="filterConvs('pendiente',this)">Sin resolver</div>
+        </div>
+        <div class="card">
+          <div class="scroll" style="max-height:500px" id="convs-list"></div>
+        </div>
+      </div>
+
+      <!-- CONOCIMIENTO -->
+      <div class="page" id="page-conocimiento">
+        <div class="tabs">
+          <div class="tab on" onclick="filterKB('faq',this)">FAQ</div>
+          <div class="tab" onclick="filterKB('doc',this)">Documentos</div>
+          <div class="tab" onclick="filterKB('url',this)">URLs</div>
+        </div>
+        <div class="g2">
+          <div class="card">
+            <div class="card-h">
+              <div><div class="card-title">Base de conocimiento</div><div class="card-sub" id="kb-count">Cargando...</div></div>
+            </div>
+            <div class="scroll" id="kb-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><div class="card-title">➕ Nueva entrada</div></div>
+            <div class="frow">
+              <label>Tipo</label>
+              <select class="fselect" id="kb-type">
+                <option value="faq">Pregunta frecuente (FAQ)</option>
+                <option value="doc">Documento</option>
+                <option value="url">URL a escanear</option>
+              </select>
+            </div>
+            <div class="frow">
+              <label>Pregunta / Título</label>
+              <input class="finput" id="kb-q" placeholder="Ej: ¿Aceptan mascotas?" />
+            </div>
+            <div class="frow">
+              <label>Respuesta</label>
+              <textarea class="ftextarea" id="kb-a" placeholder="Escribí la respuesta que el bot debe dar..."></textarea>
+            </div>
+            <div class="frow">
+              <label>Tags (opcional)</label>
+              <input class="finput" id="kb-tags" placeholder="reservas, precios, horarios..." />
+            </div>
+            <button class="btn btn-p" style="width:100%" onclick="saveKB()">Guardar en base de conocimiento</button>
+            <div id="kb-save-msg" style="margin-top:10px;font-size:12px;color:var(--a2);display:none;">✅ Guardado correctamente</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONFIGURACION -->
+      <div class="page" id="page-configuracion">
+        <div class="g2">
+          <div class="card">
+            <div class="card-h"><div class="card-title">🤖 Identidad del bot</div></div>
+            <div class="frow"><label>Nombre del bot</label><input class="finput" id="cfg-name" placeholder="Marina" /></div>
+            <div class="frow"><label>Saludo inicial</label><textarea class="ftextarea" id="cfg-greeting" style="min-height:65px"></textarea></div>
+            <div class="frow">
+              <label>Tono de respuesta</label>
+              <select class="fselect" id="cfg-tone">
+                <option value="amigable">Amigable y cálido</option>
+                <option value="formal">Formal y profesional</option>
+                <option value="casual">Casual y divertido</option>
+              </select>
+            </div>
+            <div class="frow">
+              <label>Idioma principal</label>
+              <select class="fselect" id="cfg-lang">
+                <option value="es-ar">Español (Argentina)</option>
+                <option value="es">Español (neutro)</option>
+                <option value="en">Inglés</option>
+                <option value="pt">Portugués</option>
+              </select>
+            </div>
+            <button class="btn btn-p btn-sm" onclick="saveConfig()">Guardar identidad</button>
+          </div>
+          <div class="card">
+            <div class="card-h"><div class="card-title">⏰ Comportamiento</div></div>
+            <div class="trow">
+              <div><div class="tinfo-title">Bot activo</div><div class="tinfo-desc">Responde automáticamente</div></div>
+              <div class="toggle on" id="tog-active" onclick="toggleCfg(this,'bot_activo')"></div>
+            </div>
+            <div class="trow">
+              <div><div class="tinfo-title">Modo fuera de horario</div><div class="tinfo-desc">Respuesta especial después de las 22hs</div></div>
+              <div class="toggle on" id="tog-hours" onclick="toggleCfg(this,'fuera_horario')"></div>
+            </div>
+            <div class="trow">
+              <div><div class="tinfo-title">Handoff automático</div><div class="tinfo-desc">Deriva a humano si no sabe responder</div></div>
+              <div class="toggle on" id="tog-handoff" onclick="toggleCfg(this,'handoff_auto')"></div>
+            </div>
+            <div class="trow">
+              <div><div class="tinfo-title">Notificaciones al dueño</div><div class="tinfo-desc">Alerta en handoffs</div></div>
+              <div class="toggle off" id="tog-notif" onclick="toggleCfg(this,'notificaciones')"></div>
+            </div>
+            <div class="frow" style="margin-top:14px">
+              <label>Número de handoff (WhatsApp)</label>
+              <input class="finput" id="cfg-handoff-num" placeholder="+54 9 223 000-0000" />
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div class="card-title">🎯 Prompt del sistema</div>
+            <span class="badge badge-r">Solo Super Admin</span>
+          </div>
+          <textarea class="ftextarea" id="cfg-prompt" style="min-height:110px;font-family:'DM Mono',monospace;font-size:12px"></textarea>
+          <div style="margin-top:10px;display:flex;gap:8px;">
+            <button class="btn btn-p btn-sm" onclick="saveConfig()">Guardar prompt</button>
+            <button class="btn btn-g btn-sm" onclick="loadConfig()">Recargar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CANALES -->
+      <div class="page" id="page-canales">
+        <div class="g2">
+          <div class="card">
+            <div class="card-h"><div class="card-title">📱 WhatsApp Business</div></div>
+            <div class="ch-card">
+              <div class="ch-ic wa">📱</div>
+              <div style="flex:1"><div class="ch-name" id="wa-num">Sin configurar</div><div class="ch-desc">Twilio · WhatsApp Business API</div></div>
+              <span class="badge badge-g" id="wa-status">Activo</span>
+            </div>
+            <div class="frow"><label>Número WhatsApp</label><input class="finput" id="ch-wa-num" placeholder="+54 9 223 000-0000" /></div>
+            <div class="frow"><label>Twilio Account SID</label><input class="finput" id="ch-twilio-sid" placeholder="ACxxxxxxxx" type="password"/></div>
+            <div class="frow"><label>Twilio Auth Token</label><input class="finput" id="ch-twilio-token" placeholder="••••••••" type="password"/></div>
+            <button class="btn btn-p btn-sm" onclick="saveChannels()">Guardar WhatsApp</button>
+          </div>
+          <div class="card">
+            <div class="card-h"><div class="card-title">🌐 Widget Web</div></div>
+            <div class="ch-card">
+              <div class="ch-ic web">🌐</div>
+              <div style="flex:1"><div class="ch-name" id="web-url-display">Sin configurar</div><div class="ch-desc">Widget embebible</div></div>
+              <span class="badge badge-g">Activo</span>
+            </div>
+            <div class="frow"><label>URL del sitio</label><input class="finput" id="ch-web-url" placeholder="https://tusitio.com" /></div>
+            <div class="frow">
+              <label>Color del widget</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input class="finput" id="ch-color" value="#3b82f6" style="flex:1"/>
+                <div id="color-preview" style="width:34px;height:34px;border-radius:8px;background:#3b82f6;border:1px solid var(--border2);flex-shrink:0"></div>
+              </div>
+            </div>
+            <div style="font-size:11.5px;color:var(--t2);margin-bottom:6px;font-weight:500">Código de instalación</div>
+            <div class="code-block" id="widget-code">&lt;script src="https://botcontrol.app/widget.js"<br>&nbsp;&nbsp;data-client="<span id="widget-client-id">---</span>"&gt;&lt;/script&gt;</div>
+            <button class="btn btn-g btn-sm" style="margin-top:8px" onclick="copyWidgetCode()">Copiar código</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROLES -->
+      <div class="page" id="page-roles">
+        <div class="alert">⚙️ Configurá qué puede hacer cada rol para este cliente. Los cambios se guardan en tiempo real.</div>
+        <div class="roles-grid" id="roles-grid"></div>
+      </div>
+
+      <!-- ANALITICA -->
+      <div class="page" id="page-analitica">
+        <div class="g4">
+          <div class="stat"><div class="stat-label">Este mes</div><div class="stat-val" style="color:var(--a1)" id="an-total">—</div><div class="stat-ch up">consultas totales</div></div>
+          <div class="stat"><div class="stat-label">Tasa resolución</div><div class="stat-val" style="color:var(--a2)" id="an-rate">—</div><div class="stat-ch up">sin intervención humana</div></div>
+          <div class="stat"><div class="stat-label">Tiempo resp. prom.</div><div class="stat-val" style="color:var(--a3)" id="an-time">1.2s</div><div class="stat-ch up">vs horas manual</div></div>
+          <div class="stat"><div class="stat-label">Handoffs</div><div class="stat-val" style="color:var(--a4)" id="an-hand">—</div><div class="stat-ch dn">derivados a humano</div></div>
+        </div>
+        <div class="g2">
+          <div class="card">
+            <div class="card-h"><div class="card-title">Temas más consultados</div></div>
+            <div id="an-topics"></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><div class="card-title">Actividad por hora</div></div>
+            <div class="bar-chart" id="an-bars" style="height:90px"></div>
+            <div style="font-size:10px;color:var(--t3);text-align:center;margin-top:4px">Pico entre 18–22hs</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORIAL -->
+      <div class="page" id="page-historial">
+        <div class="card">
+          <div class="card-h">
+            <div><div class="card-title">Historial de cambios</div><div class="card-sub">Quién modificó qué y cuándo</div></div>
+            <button class="btn btn-g btn-sm" onclick="exportLog()">Exportar</button>
+          </div>
+          <div id="log-list" class="scroll" style="max-height:500px"></div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- MODAL NUEVO CLIENTE -->
+<div class="modal-bg" id="modal-new-client">
+  <div class="modal">
+    <div class="modal-title">Nuevo cliente</div>
+    <div class="modal-sub">Completá los datos para crear el workspace del cliente</div>
+    <div class="frow"><label>Nombre del negocio</label><input class="finput" id="nc-name" placeholder="Ej: Hostel Las Dunas" /></div>
+    <div class="frow"><label>Firebase Database URL</label><input class="finput" id="nc-firebase" placeholder="https://proyecto-xxxx-default-rtdb.firebaseio.com" /></div>
+    <div class="frow"><label>Color identificador</label>
+      <div style="display:flex;gap:8px">
+        <input class="finput" id="nc-color" value="#3b82f6" style="flex:1"/>
+        <div id="nc-color-prev" style="width:36px;height:36px;border-radius:8px;background:#3b82f6;border:1px solid var(--border2)"></div>
+      </div>
+    </div>
+    <div class="frow">
+      <label>Plan</label>
+      <select class="fselect" id="nc-plan">
+        <option value="basico">Básico — USD 50/mes</option>
+        <option value="pro">Pro — USD 80/mes</option>
+        <option value="enterprise">Enterprise — USD 150/mes</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-g" onclick="closeModal('modal-new-client')">Cancelar</button>
+      <button class="btn btn-p" onclick="createClient()">Crear cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SANDBOX -->
+<div class="modal-bg" id="modal-sandbox">
+  <div class="modal">
+    <div class="modal-title">🧪 Modo prueba activo</div>
+    <div class="modal-sub">Podés probar el bot sin que llegue a los canales reales</div>
+    <div style="background:var(--s3);border-radius:var(--rs);padding:16px;margin-bottom:16px;">
+      <div id="sandbox-messages" style="min-height:180px;max-height:220px;overflow-y:auto;margin-bottom:12px;font-size:13px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input class="finput" id="sandbox-input" placeholder="Escribí un mensaje de prueba..." onkeydown="if(event.key==='Enter')sendSandbox()" style="flex:1"/>
+        <button class="btn btn-p btn-sm" onclick="sendSandbox()">Enviar</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-g" onclick="closeModal('modal-sandbox')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toast-icon">✅</span>
+  <span id="toast-msg">Guardado correctamente</span>
+</div>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, set, get, push, onValue, serverTimestamp, update }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAfn7KLZ39d9kwA98X9pkLd5yc73tK-BVY",
+  authDomain: "botcontrol-base.firebaseapp.com",
+  databaseURL: "https://botcontrol-base-default-rtdb.firebaseio.com",
+  projectId: "botcontrol-base",
+  storageBucket: "botcontrol-base.firebasestorage.app",
+  messagingSenderId: "464640237670",
+  appId: "1:464640237670:web:607ae921d6bc33b5050da7"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+// STATE
+let currentClient = null;
+let currentUser = null;
+let clients = {};
+let kbFilter = 'faq';
+let convsFilter = 'todas';
+
+// ---- AUTH ----
+window.doLogin = async () => {
+  const email = document.getElementById('login-email').value;
+  const pass  = document.getElementById('login-pass').value;
+  const err   = document.getElementById('login-error');
+  err.style.display = 'none';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    err.style.display = 'block';
+  }
+};
+
+window.doLogout = async () => {
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, user => {
+  if(user) {
+    currentUser = user;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    const name = user.email.split('@')[0];
+    document.getElementById('user-name').textContent = user.email;
+    document.getElementById('user-avatar').textContent = name.substring(0,2).toUpperCase();
+    initApp();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app').classList.remove('visible');
+  }
+});
+
+// ---- INIT ----
+async function initApp() {
+  await loadClients();
+  renderDashboardStats();
+  renderDashboardBars();
+}
+
+// ---- CLIENTS ----
+async function loadClients() {
+  const snap = await get(ref(db, 'clientes'));
+  clients = snap.exists() ? snap.val() : {};
+
+  // seed demo clients si no hay ninguno
+  if(Object.keys(clients).length === 0) {
+    await seedDemoData();
+    const snap2 = await get(ref(db, 'clientes'));
+    clients = snap2.exists() ? snap2.val() : {};
+  }
+
+  renderClientSidebar();
+  // seleccionar primer cliente
+  const ids = Object.keys(clients);
+  if(ids.length > 0) selectClient(ids[0]);
+}
+
+async function seedDemoData() {
+  const demoClients = {
+    'puerto-delfin': {
+      nombre: 'Puerto Delfín',
+      color: '#3b82f6',
+      plan: 'pro',
+      activo: true,
+      firebase_url: 'https://sistema-de-reservas-d9e54-default-rtdb.firebaseio.com',
+      config: {
+        bot_nombre: 'Marina',
+        greeting: '¡Hola! Soy Marina, la asistente de Puerto Delfín 🌊 ¿En qué puedo ayudarte?',
+        tono: 'amigable',
+        idioma: 'es-ar',
+        bot_activo: true,
+        fuera_horario: true,
+        handoff_auto: true,
+        notificaciones: false,
+        handoff_num: '+54 9 223 536-5385',
+        prompt: 'Sos Marina, asistente de Cabañas Puerto Delfín. Respondé en español argentino, de forma cálida. No inventes precios ni disponibilidad. Si no sabés, derivá al equipo.'
+      },
+      canales: {
+        wa_num: '+54 9 223 536-5385',
+        web_url: 'puertodelfin.com',
+        color_widget: '#3b82f6'
+      },
+      roles: {
+        admin: { analitica:true, conversaciones:true, entrenar:false, configurar:true, exportar:true },
+        operador: { analitica:false, conversaciones:true, entrenar:true, configurar:false, exportar:false }
+      },
+      analitica: { total_mes:1284, tasa_resolucion:91, handoffs:112 }
+    },
+    'alula-hostel': {
+      nombre: 'Alula Hostel',
+      color: '#10b981',
+      plan: 'basico',
+      activo: true,
+      firebase_url: 'https://alula-hostel-default-rtdb.firebaseio.com',
+      config: {
+        bot_nombre: 'Alu',
+        greeting: '¡Hola! Soy Alu, el asistente de Alula Hostel 🏄 ¿En qué te puedo ayudar?',
+        tono: 'casual',
+        idioma: 'es-ar',
+        bot_activo: true,
+        fuera_horario: false,
+        handoff_auto: true,
+        notificaciones: true,
+        handoff_num: '+54 9 223 000-0000',
+        prompt: 'Sos Alu, asistente del Alula Hostel. Tono casual y joven. Respondé en español argentino.'
+      },
+      canales: { wa_num: '+54 9 223 000-0000', web_url: 'alulahostel.com', color_widget: '#10b981' },
+      roles: {
+        admin: { analitica:true, conversaciones:true, entrenar:false, configurar:false, exportar:true },
+        operador: { analitica:false, conversaciones:true, entrenar:true, configurar:false, exportar:false }
+      },
+      analitica: { total_mes:743, tasa_resolucion:85, handoffs:67 }
+    }
+  };
+  for(const [id, data] of Object.entries(demoClients)) {
+    await set(ref(db, `clientes/${id}`), data);
+  }
+  // seed KB para puerto-delfin
+  const kbDemo = [
+    { tipo:'faq', pregunta:'¿Tienen disponibilidad para el finde largo?', respuesta:'Podemos verificar disponibilidad. ¿Para qué fechas exactas y cuántas personas?', tags:'reservas,disponibilidad', creado: Date.now() },
+    { tipo:'faq', pregunta:'¿Cuáles son los precios?', respuesta:'Cabañas para 3 personas: $45.000/noche. Para 4: $55.000/noche. Para 6: $70.000/noche. Precios temporada baja.', tags:'precios,tarifas', creado: Date.now() },
+    { tipo:'faq', pregunta:'¿Aceptan mascotas?', respuesta:'Sí, aceptamos mascotas en cabañas 1 a 4. Hay un adicional de $5.000 por noche.', tags:'mascotas,politicas', creado: Date.now() },
+    { tipo:'faq', pregunta:'¿Cómo llegar desde Mar del Plata?', respuesta:'Son 40km por Ruta 11 hacia el sur. Al llegar a Mar de las Pampas, doblar en la rotonda hacia el mar. Nosotros estamos en Calle Los Pinos 234.', tags:'ubicacion,como-llegar', creado: Date.now() },
+    { tipo:'url', pregunta:'puertodelfin.com', respuesta:'Sitio web oficial con fotos, precios y reservas online.', tags:'web', creado: Date.now() },
+  ];
+  for(const item of kbDemo) {
+    await push(ref(db, 'clientes/puerto-delfin/conocimiento'), item);
+  }
+  // seed conversaciones
+  const convsDemo = [
+    { nombre:'María González', preview:'¿Tienen disponibilidad para el finde largo?', canal:'whatsapp', estado:'bot', hora:'14:32', color:'#3b82f6' },
+    { nombre:'Juan Pérez', preview:'Quiero saber el precio de la cabaña para 4 personas', canal:'web', estado:'bot', hora:'13:15', color:'#ef4444' },
+    { nombre:'Ana López', preview:'Necesito modificar la fecha de mi reserva', canal:'whatsapp', estado:'humano', hora:'11:48', color:'#f59e0b' },
+    { nombre:'Carlos Rodríguez', preview:'¿Aceptan mascotas en las cabañas pequeñas?', canal:'web', estado:'resuelto', hora:'10:20', color:'#10b981' },
+    { nombre:'Laura Martínez', preview:'¿Tienen WiFi en todas las cabañas?', canal:'whatsapp', estado:'pendiente', hora:'09:05', color:'#8b5cf6' },
+  ];
+  for(const c of convsDemo) {
+    await push(ref(db, 'clientes/puerto-delfin/conversaciones'), c);
+  }
+  // seed log
+  const logDemo = [
+    { quien:'admin@botcontrol.app', accion:'Creó cliente Puerto Delfín', tipo:'create', ts: Date.now()-3600000 },
+    { quien:'admin@botcontrol.app', accion:'Actualizó prompt del sistema', tipo:'edit', ts: Date.now()-7200000 },
+    { quien:'admin@botcontrol.app', accion:'Agregó FAQ: ¿Aceptan mascotas?', tipo:'kb', ts: Date.now()-86400000 },
+    { quien:'admin@botcontrol.app', accion:'Activó canal WhatsApp', tipo:'channel', ts: Date.now()-172800000 },
+  ];
+  for(const l of logDemo) {
+    await push(ref(db, 'clientes/puerto-delfin/log'), l);
+  }
+}
+
+function renderClientSidebar() {
+  const list = document.getElementById('client-list');
+  list.innerHTML = '';
+  for(const [id, c] of Object.entries(clients)) {
+    const div = document.createElement('div');
+    div.className = 'cc' + (currentClient===id?' sel':'');
+    div.setAttribute('data-id', id);
+    div.innerHTML = `
+      <div class="cc-dot" style="background:${c.color||'#666'}"></div>
+      <div class="cc-name">${c.nombre}</div>
+      <div class="cc-on ${c.activo?'y':'n'}">${c.activo?'ON':'OFF'}</div>`;
+    div.onclick = () => selectClient(id);
+    list.appendChild(div);
+  }
+}
+
+function selectClient(id) {
+  currentClient = id;
+  const c = clients[id];
+  if(!c) return;
+  // update sidebar
+  document.querySelectorAll('.cc').forEach(el => {
+    el.classList.toggle('sel', el.getAttribute('data-id')===id);
+  });
+  document.getElementById('active-client-name').textContent = c.nombre;
+  document.getElementById('widget-client-id').textContent = id;
+  loadConfig();
+  loadChannels();
+  loadKB();
+  loadConversaciones();
+  loadRoles();
+  loadLog();
+  loadAnalitica();
+  renderDashboardForClient();
+}
+
+// ---- DASHBOARD ----
+function renderDashboardStats() {
+  const total = Object.keys(clients).length;
+  const active = Object.values(clients).filter(c=>c.activo).length;
+  document.getElementById('s-clients').textContent = active;
+  document.getElementById('s-today').textContent = '47';
+  document.getElementById('s-rate').textContent = '89%';
+  document.getElementById('s-unans').textContent = '5';
+}
+
+function renderDashboardForClient() {
+  if(!currentClient) return;
+  const c = clients[currentClient];
+  document.getElementById('dash-wa-desc').textContent = (c.canales?.wa_num||'Sin configurar') + ' · activo';
+  document.getElementById('dash-web-desc').textContent = (c.canales?.web_url||'Sin configurar') + ' · activo';
+  loadDashConvs();
+  loadDashUnans();
+}
+
+function renderDashboardBars() {
+  const vals = [40,65,50,80,95,100,75];
+  const days = ['L','M','X','J','V','S','D'];
+  const container = document.getElementById('dash-bars');
+  container.innerHTML = vals.map((v,i)=>`
+    <div class="bar-wrap">
+      <div class="bar" style="height:${v}%;${i===5?'background:linear-gradient(180deg,var(--a2),rgba(16,185,129,.2))':''}"></div>
+      <div class="bar-label">${days[i]}</div>
+    </div>`).join('');
+}
+
+async function loadDashConvs() {
+  const snap = await get(ref(db, `clientes/${currentClient}/conversaciones`));
+  const container = document.getElementById('dash-convs');
+  if(!snap.exists()){container.innerHTML='<div class="empty"><div class="empty-icon">💬</div><div class="empty-text">Sin conversaciones</div></div>';return;}
+  const items = Object.values(snap.val()).slice(0,4);
+  container.innerHTML = items.map(c=>convHTML(c)).join('');
+}
+
+async function loadDashUnans() {
+  const unans = [
+    {text:'¿Tienen servicio de desayuno?', count:3},
+    {text:'¿Cuánto sale el transfer desde MDP?', count:2},
+    {text:'¿Tienen WiFi en todas las cabañas?', count:2},
+  ];
+  document.getElementById('dash-unans').innerHTML = unans.map(u=>`
+    <div class="unans">
+      <div class="unans-text">${u.text}</div>
+      <div class="unans-count">×${u.count}</div>
+      <button class="btn-add-kb" onclick="prefillKB('${u.text}')">+ Agregar</button>
+    </div>`).join('');
+}
+
+// ---- KB ----
+async function loadKB() {
+  const snap = await get(ref(db, `clientes/${currentClient}/conocimiento`));
+  const container = document.getElementById('kb-list');
+  if(!snap.exists()){
+    container.innerHTML='<div class="empty"><div class="empty-icon">🧠</div><div class="empty-text">Base de conocimiento vacía. Agregá la primera entrada.</div></div>';
+    document.getElementById('kb-count').textContent='0 entradas';
+    return;
+  }
+  const items = Object.entries(snap.val());
+  document.getElementById('kb-count').textContent = `${items.length} entradas · última actualización reciente`;
+  const filtered = kbFilter==='all' ? items : items.filter(([,v])=>v.tipo===kbFilter);
+  if(filtered.length===0){
+    container.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">Sin entradas de este tipo</div></div>';
+    return;
+  }
+  container.innerHTML = filtered.map(([id,item])=>`
+    <div class="kb-item">
+      <div class="kb-ic ${item.tipo||'faq'}">${item.tipo==='url'?'🔗':item.tipo==='doc'?'📄':'❓'}</div>
+      <div class="kb-body">
+        <div class="kb-title">${item.pregunta}</div>
+        <div class="kb-meta">${item.tipo?.toUpperCase()||'FAQ'} · ${item.tags||'sin tags'}</div>
+      </div>
+      <div class="kb-acts">
+        <button class="ib" onclick="editKB('${id}','${item.pregunta.replace(/'/g,"\\'")}','${item.respuesta?.replace(/'/g,"\\'")||''}')">✏️</button>
+        <button class="ib" onclick="deleteKB('${id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+window.saveKB = async () => {
+  const q = document.getElementById('kb-q').value.trim();
+  const a = document.getElementById('kb-a').value.trim();
+  const tipo = document.getElementById('kb-type').value;
+  const tags = document.getElementById('kb-tags').value.trim();
+  if(!q||!a){showToast('Completá pregunta y respuesta','⚠️');return;}
+  await push(ref(db, `clientes/${currentClient}/conocimiento`), {
+    tipo, pregunta:q, respuesta:a, tags, creado:Date.now()
+  });
+  await logAction(`Agregó ${tipo.toUpperCase()}: ${q}`);
+  document.getElementById('kb-q').value='';
+  document.getElementById('kb-a').value='';
+  document.getElementById('kb-tags').value='';
+  loadKB();
+  showToast('Entrada guardada en base de conocimiento');
+};
+
+window.deleteKB = async (id) => {
+  if(!confirm('¿Eliminar esta entrada?')) return;
+  await set(ref(db, `clientes/${currentClient}/conocimiento/${id}`), null);
+  loadKB();
+  showToast('Entrada eliminada','🗑️');
+};
+
+window.editKB = (id, q, a) => {
+  document.getElementById('kb-q').value = q;
+  document.getElementById('kb-a').value = a;
+  goPage('conocimiento', null);
+  showToast('Editá la entrada y guardá de nuevo','✏️');
+};
+
+window.filterKB = (tipo, el) => {
+  kbFilter = tipo;
+  document.querySelectorAll('#page-conocimiento .tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  loadKB();
+};
+
+window.prefillKB = (text) => {
+  document.getElementById('kb-q').value = text;
+  goPage('conocimiento', null);
+  showToast('Pregunta cargada. Agregá la respuesta.','💡');
+};
+
+// ---- CONFIG ----
+async function loadConfig() {
+  if(!currentClient) return;
+  const snap = await get(ref(db, `clientes/${currentClient}/config`));
+  if(!snap.exists()) return;
+  const c = snap.val();
+  document.getElementById('cfg-name').value = c.bot_nombre||'';
+  document.getElementById('cfg-greeting').value = c.greeting||'';
+  document.getElementById('cfg-tone').value = c.tono||'amigable';
+  document.getElementById('cfg-lang').value = c.idioma||'es-ar';
+  document.getElementById('cfg-prompt').value = c.prompt||'';
+  document.getElementById('cfg-handoff-num').value = c.handoff_num||'';
+  setToggle('tog-active', c.bot_activo);
+  setToggle('tog-hours', c.fuera_horario);
+  setToggle('tog-handoff', c.handoff_auto);
+  setToggle('tog-notif', c.notificaciones);
+}
+window.loadConfig = loadConfig;
+
+window.saveConfig = async () => {
+  const cfg = {
+    bot_nombre: document.getElementById('cfg-name').value,
+    greeting: document.getElementById('cfg-greeting').value,
+    tono: document.getElementById('cfg-tone').value,
+    idioma: document.getElementById('cfg-lang').value,
+    prompt: document.getElementById('cfg-prompt').value,
+    handoff_num: document.getElementById('cfg-handoff-num').value,
+    bot_activo: document.getElementById('tog-active').classList.contains('on'),
+    fuera_horario: document.getElementById('tog-hours').classList.contains('on'),
+    handoff_auto: document.getElementById('tog-handoff').classList.contains('on'),
+    notificaciones: document.getElementById('tog-notif').classList.contains('on'),
+  };
+  await set(ref(db, `clientes/${currentClient}/config`), cfg);
+  await logAction('Actualizó configuración del bot');
+  showToast('Configuración guardada');
+};
+
+window.toggleCfg = (el, key) => {
+  el.classList.toggle('on');
+  el.classList.toggle('off');
+};
+
+function setToggle(id, val) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.className = 'toggle ' + (val ? 'on' : 'off');
+}
+
+// ---- CHANNELS ----
+async function loadChannels() {
+  const snap = await get(ref(db, `clientes/${currentClient}/canales`));
+  if(!snap.exists()) return;
+  const c = snap.val();
+  document.getElementById('ch-wa-num').value = c.wa_num||'';
+  document.getElementById('ch-web-url').value = c.web_url||'';
+  document.getElementById('ch-color').value = c.color_widget||'#3b82f6';
+  document.getElementById('color-preview').style.background = c.color_widget||'#3b82f6';
+  document.getElementById('wa-num').textContent = c.wa_num||'Sin configurar';
+  document.getElementById('web-url-display').textContent = c.web_url||'Sin configurar';
+}
+window.loadChannels = loadChannels;
+
+window.saveChannels = async () => {
+  const ch = {
+    wa_num: document.getElementById('ch-wa-num').value,
+    twilio_sid: document.getElementById('ch-twilio-sid').value,
+    twilio_token: document.getElementById('ch-twilio-token').value,
+    web_url: document.getElementById('ch-web-url').value,
+    color_widget: document.getElementById('ch-color').value,
+  };
+  await set(ref(db, `clientes/${currentClient}/canales`), ch);
+  await logAction('Actualizó configuración de canales');
+  loadChannels();
+  showToast('Canales guardados');
+};
+
+window.copyWidgetCode = () => {
+  const code = `<script src="https://botcontrol.app/widget.js" data-client="${currentClient}"><\/script>`;
+  navigator.clipboard.writeText(code);
+  showToast('Código copiado al portapapeles','📋');
+};
+
+document.getElementById('ch-color')?.addEventListener('input', e => {
+  document.getElementById('color-preview').style.background = e.target.value;
+});
+
+// ---- CONVERSACIONES ----
+function convHTML(c) {
+  const badges = {
+    bot: '<span class="badge badge-b">Bot</span>',
+    humano: '<span class="badge badge-y">Humano</span>',
+    resuelto: '<span class="badge badge-g">Resuelto</span>',
+    pendiente: '<span class="badge badge-r">Sin resp.</span>',
+  };
+  const canales = {
+    whatsapp: '<span class="badge badge-p" style="margin-left:6px;font-size:9px">📱 WA</span>',
+    web: '<span class="badge badge-b" style="margin-left:6px;font-size:9px">🌐 Web</span>',
+  };
+  return `<div class="conv">
+    <div class="conv-av" style="background:${c.color||'#666'}">${(c.nombre||'?').split(' ').map(w=>w[0]).join('').substring(0,2)}</div>
+    <div style="flex:1;min-width:0">
+      <div class="conv-name">${c.nombre||'Desconocido'} ${canales[c.canal]||''}</div>
+      <div class="conv-prev">${c.preview||'...'}</div>
+    </div>
+    <div class="conv-r">
+      <div class="conv-time">${c.hora||''}</div>
+      ${badges[c.estado]||''}
+    </div>
+  </div>`;
+}
+
+async function loadConversaciones() {
+  const snap = await get(ref(db, `clientes/${currentClient}/conversaciones`));
+  renderConvs(snap);
+}
+
+function renderConvs(snap) {
+  const container = document.getElementById('convs-list');
+  if(!snap||!snap.exists()){
+    container.innerHTML='<div class="empty"><div class="empty-icon">💬</div><div class="empty-text">Sin conversaciones todavía</div></div>';
+    return;
+  }
+  let items = Object.values(snap.val());
+  if(convsFilter!=='todas') items = items.filter(c=>c.estado===convsFilter);
+  container.innerHTML = items.length ? items.map(c=>convHTML(c)).join('') :
+    '<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">Sin conversaciones con este filtro</div></div>';
+}
+
+window.filterConvs = (f, el) => {
+  convsFilter = f;
+  document.querySelectorAll('#page-conversaciones .tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  loadConversaciones();
+};
+
+// ---- ROLES ----
+async function loadRoles() {
+  const snap = await get(ref(db, `clientes/${currentClient}/roles`));
+  const roles = snap.exists() ? snap.val() : {
+    admin: { analitica:true, conversaciones:true, entrenar:false, configurar:true, exportar:true },
+    operador: { analitica:false, conversaciones:true, entrenar:true, configurar:false, exportar:false }
+  };
+  const perms = [
+    { key:'analitica', label:'Ver analítica' },
+    { key:'conversaciones', label:'Ver conversaciones' },
+    { key:'entrenar', label:'Entrenar bot' },
+    { key:'configurar', label:'Configurar bot' },
+    { key:'exportar', label:'Exportar datos' },
+  ];
+  const roleNames = { admin:'👔 Admin', operador:'🎧 Operador' };
+  const container = document.getElementById('roles-grid');
+  container.innerHTML = '';
+  // Super Admin card (siempre todo)
+  const saCard = document.createElement('div');
+  saCard.className = 'role-card';
+  saCard.innerHTML = `<div class="role-name"><span class="badge badge-r">🔴 Super Admin</span></div>` +
+    perms.map(p=>`<div class="perm-row"><span>${p.label}</span><span style="color:var(--a2)">✅</span></div>`).join('') +
+    `<div style="font-size:10px;color:var(--t3);margin-top:8px">Todos los permisos siempre activos</div>`;
+  container.appendChild(saCard);
+
+  for(const [role, permsObj] of Object.entries(roles)) {
+    const card = document.createElement('div');
+    card.className = 'role-card';
+    card.innerHTML = `<div class="role-name"><span class="badge ${role==='admin'?'badge-y':'badge-g'}">${roleNames[role]||role}</span></div>` +
+      perms.map(p=>`
+        <div class="perm-row">
+          <span>${p.label}</span>
+          <div class="toggle ${permsObj[p.key]?'on':'off'}" onclick="toggleRole('${role}','${p.key}',this)"></div>
+        </div>`).join('');
+    container.appendChild(card);
+  }
+}
+
+window.toggleRole = async (role, key, el) => {
+  el.classList.toggle('on');
+  el.classList.toggle('off');
+  const val = el.classList.contains('on');
+  await update(ref(db, `clientes/${currentClient}/roles/${role}`), { [key]: val });
+  await logAction(`Cambió permiso "${key}" del rol "${role}" a ${val?'activado':'desactivado'}`);
+  showToast(`Permiso actualizado`);
+};
+
+// ---- ANALITICA ----
+async function loadAnalitica() {
+  const snap = await get(ref(db, `clientes/${currentClient}/analitica`));
+  const a = snap.exists() ? snap.val() : { total_mes:0, tasa_resolucion:0, handoffs:0 };
+  document.getElementById('an-total').textContent = a.total_mes||'—';
+  document.getElementById('an-rate').textContent = (a.tasa_resolucion||'—')+'%';
+  document.getElementById('an-hand').textContent = a.handoffs||'—';
+
+  const topics = [
+    {ic:'🏠', label:'Disponibilidad y reservas', val:85, count:387},
+    {ic:'💰', label:'Precios y tarifas', val:65, count:298},
+    {ic:'📍', label:'Cómo llegar', val:45, count:204},
+    {ic:'🐾', label:'Mascotas', val:30, count:134},
+    {ic:'📅', label:'Check-in / Check-out', val:22, count:98},
+  ];
+  document.getElementById('an-topics').innerHTML = topics.map(t=>`
+    <div class="ms">
+      <div class="ms-ic">${t.ic}</div>
+      <div class="ms-label">${t.label}</div>
+      <div class="ms-bar"><div class="ms-fill" style="width:${t.val}%"></div></div>
+      <div class="ms-val">${t.count}</div>
+    </div>`).join('');
+
+  const hrs = [10,5,8,35,70,55,90,100,75];
+  const labels = ['0','3','6','9','12','15','18','20','22'];
+  document.getElementById('an-bars').innerHTML = hrs.map((v,i)=>`
+    <div class="bar-wrap">
+      <div class="bar" style="height:${v}%;${v>=90?'background:linear-gradient(180deg,var(--a2),rgba(16,185,129,.2))':''}"></div>
+      <div class="bar-label">${labels[i]}</div>
+    </div>`).join('');
+}
+
+// ---- LOG ----
+async function loadLog() {
+  const snap = await get(ref(db, `clientes/${currentClient}/log`));
+  const container = document.getElementById('log-list');
+  if(!snap.exists()){
+    container.innerHTML='<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Sin cambios registrados</div></div>';
+    return;
+  }
+  const items = Object.values(snap.val()).reverse().slice(0,50);
+  const colors = { create:'var(--a2)', edit:'var(--a1)', kb:'var(--a5)', channel:'var(--a3)' };
+  container.innerHTML = items.map(l=>`
+    <div class="log-item">
+      <div class="log-dot" style="background:${colors[l.tipo]||'var(--t3)'}"></div>
+      <div class="log-text"><strong>${l.accion}</strong><br><span style="font-size:10.5px;color:var(--t3)">${l.quien}</span></div>
+      <div class="log-time">${new Date(l.ts).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+    </div>`).join('');
+}
+
+async function logAction(accion, tipo='edit') {
+  if(!currentClient||!currentUser) return;
+  await push(ref(db, `clientes/${currentClient}/log`), {
+    quien: currentUser.email,
+    accion,
+    tipo,
+    ts: Date.now()
+  });
+}
+
+window.exportLog = () => {
+  showToast('Función de exportación próximamente','📤');
+};
+
+// ---- CLIENTS PAGE ----
+async function renderClientsPage() {
+  const snap = await get(ref(db, 'clientes'));
+  const all = snap.exists() ? snap.val() : {};
+  const tbody = document.getElementById('clients-tbody');
+  const count = Object.keys(all).length;
+  document.getElementById('clients-count').textContent = `${count} cliente${count!==1?'s':''} registrados`;
+  tbody.innerHTML = Object.entries(all).map(([id,c])=>`
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${c.color||'#666'}"></div>
+        <strong>${c.nombre}</strong>
+      </div></td>
+      <td>${c.config?.bot_nombre||'—'}</td>
+      <td><span class="badge ${c.activo?'badge-g':'badge-r'}">${c.activo?'Activo':'Inactivo'}</span></td>
+      <td><span style="font-size:11px">📱 WA · 🌐 Web</span></td>
+      <td><span class="badge badge-b">${c.plan||'básico'}</span></td>
+      <td style="display:flex;gap:5px;">
+        <button class="btn btn-g btn-sm" onclick="selectClient('${id}');goPage('configuracion',null)">Editar</button>
+        <button class="btn btn-d btn-sm" onclick="toggleClientStatus('${id}')">
+          ${c.activo?'Desactivar':'Activar'}
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+window.toggleClientStatus = async (id) => {
+  const snap = await get(ref(db, `clientes/${id}/activo`));
+  const current = snap.exists() ? snap.val() : true;
+  await set(ref(db, `clientes/${id}/activo`), !current);
+  const snap2 = await get(ref(db, 'clientes'));
+  clients = snap2.exists() ? snap2.val() : {};
+  renderClientSidebar();
+  renderClientsPage();
+  showToast(`Cliente ${!current?'activado':'desactivado'}`);
+};
+
+window.createClient = async () => {
+  const name = document.getElementById('nc-name').value.trim();
+  const fbUrl = document.getElementById('nc-firebase').value.trim();
+  const color = document.getElementById('nc-color').value;
+  const plan = document.getElementById('nc-plan').value;
+  if(!name){showToast('Ingresá el nombre del cliente','⚠️');return;}
+  const id = name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  await set(ref(db, `clientes/${id}`), {
+    nombre:name, firebase_url:fbUrl, color, plan, activo:true,
+    config:{ bot_nombre:'Bot', greeting:'¡Hola! ¿En qué puedo ayudarte?', tono:'amigable', idioma:'es-ar', bot_activo:true, handoff_auto:true, prompt:'' },
+    canales:{}, roles:{ admin:{analitica:true,conversaciones:true,entrenar:false,configurar:true,exportar:true}, operador:{analitica:false,conversaciones:true,entrenar:true,configurar:false,exportar:false} },
+    analitica:{total_mes:0,tasa_resolucion:0,handoffs:0}
+  });
+  await logAction(`Creó cliente: ${name}`, 'create');
+  const snap = await get(ref(db, 'clientes'));
+  clients = snap.exists() ? snap.val() : {};
+  renderClientSidebar();
+  renderClientsPage();
+  closeModal('modal-new-client');
+  selectClient(id);
+  showToast(`Cliente "${name}" creado exitosamente`,'🏢');
+  document.getElementById('nc-name').value='';
+  document.getElementById('nc-firebase').value='';
+};
+
+// ---- NAVIGATION ----
+window.goPage = (name, el) => {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.getElementById('page-'+name).classList.add('on');
+  document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
+  if(el) el.classList.add('on');
+  const titles = {
+    dashboard:'Dashboard', clientes:'Clientes', conversaciones:'Conversaciones',
+    conocimiento:'Base de conocimiento', configuracion:'Configuración',
+    canales:'Canales', roles:'Roles y permisos', analitica:'Analítica', historial:'Historial'
+  };
+  const actions = {
+    dashboard:'+ Nueva entrada', clientes:'+ Nuevo cliente', conversaciones:'Exportar',
+    conocimiento:'+ Agregar entrada', configuracion:'Guardar', canales:'Guardar',
+    roles:'Guardar roles', analitica:'Exportar reporte', historial:'Exportar'
+  };
+  document.getElementById('page-title').textContent = titles[name]||name;
+  document.getElementById('topbar-btn').textContent = actions[name]||'Acción';
+
+  if(name==='clientes') renderClientsPage();
+  if(name==='dashboard') { renderDashboardStats(); renderDashboardForClient(); renderDashboardBars(); }
+};
+
+window.topbarAction = () => {
+  const activePage = document.querySelector('.page.on')?.id?.replace('page-','');
+  if(activePage==='clientes') openModal('modal-new-client');
+  else if(activePage==='conocimiento') document.getElementById('kb-q')?.focus();
+  else if(activePage==='configuracion') saveConfig();
+  else showToast('Función disponible próximamente','🚧');
+};
+
+// ---- SANDBOX ----
+window.toggleSandbox = () => openModal('modal-sandbox');
+window.sendSandbox = () => {
+  const input = document.getElementById('sandbox-input');
+  const msgs = document.getElementById('sandbox-messages');
+  const text = input.value.trim();
+  if(!text) return;
+  msgs.innerHTML += `<div style="text-align:right;margin-bottom:8px"><span style="background:var(--a1);color:#fff;padding:5px 10px;border-radius:12px 12px 0 12px;display:inline-block;max-width:80%">${text}</span></div>`;
+  input.value = '';
+  setTimeout(()=>{
+    msgs.innerHTML += `<div style="margin-bottom:8px"><span style="background:var(--s4);padding:5px 10px;border-radius:12px 12px 12px 0;display:inline-block;max-width:80%;font-size:12.5px">Hola, soy el bot en modo prueba 🧪 Esta respuesta vendría de Groq + tu base de conocimiento. Pronto estará conectado al motor real.</span></div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 800);
+  msgs.scrollTop = msgs.scrollHeight;
+};
+
+// ---- MODAL ----
+window.openModal = (id) => document.getElementById(id).classList.add('open');
+window.closeModal = (id) => document.getElementById(id).classList.remove('open');
+document.querySelectorAll('.modal-bg').forEach(m => {
+  m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); });
+});
+
+// Color preview modal
+document.getElementById('nc-color')?.addEventListener('input', e => {
+  document.getElementById('nc-color-prev').style.background = e.target.value;
+});
+
+// ---- TOAST ----
+window.showToast = (msg='Guardado', icon='✅') => {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-icon').textContent = icon;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+};
+</script>
+</body>
+</html>

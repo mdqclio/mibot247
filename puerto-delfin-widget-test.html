@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Puerto Delfín · Widget de chat (test)</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; min-height: 100vh; background: #f4f6f8; }
+  .pd-demo-note { padding: 24px; color: #555; max-width: 640px; }
+
+  /* ===== Puerto Delfín chat widget ===== */
+  #pd-chat * { box-sizing: border-box; }
+  #pd-chat {
+    --pd-accent: #0a7ea4;
+    --pd-accent-dark: #086684;
+    position: fixed; right: 20px; bottom: 20px; z-index: 99999;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  /* floating bubble */
+  #pd-bubble {
+    width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer;
+    background: var(--pd-accent); color: #fff; font-size: 28px; line-height: 1;
+    box-shadow: 0 4px 14px rgba(0,0,0,.25); transition: transform .15s ease, background .15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #pd-bubble:hover { background: var(--pd-accent-dark); transform: scale(1.05); }
+  #pd-bubble:focus-visible { outline: 3px solid #ffd166; outline-offset: 2px; }
+
+  /* panel */
+  #pd-panel {
+    position: absolute; right: 0; bottom: 74px;
+    width: 340px; max-width: calc(100vw - 32px); height: 480px; max-height: calc(100vh - 110px);
+    background: #fff; border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.22);
+    display: none; flex-direction: column; overflow: hidden;
+  }
+  #pd-chat.pd-open #pd-panel { display: flex; }
+
+  #pd-header {
+    background: var(--pd-accent); color: #fff; padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto;
+  }
+  #pd-header h3 { margin: 0; font-size: 15px; font-weight: 600; }
+  #pd-header span { font-size: 12px; opacity: .85; display: block; }
+  #pd-close { background: transparent; border: none; color: #fff; font-size: 22px; cursor: pointer; line-height: 1; padding: 0 4px; }
+  #pd-close:focus-visible { outline: 2px solid #ffd166; }
+
+  #pd-messages {
+    flex: 1 1 auto; overflow-y: auto; padding: 14px; background: #f7f9fa;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .pd-msg { max-width: 80%; padding: 9px 12px; border-radius: 14px; font-size: 14px; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; }
+  .pd-msg.bot  { align-self: flex-start; background: #fff; color: #1a1a1a; border: 1px solid #e3e8eb; border-bottom-left-radius: 4px; }
+  .pd-msg.user { align-self: flex-end; background: var(--pd-accent); color: #fff; border-bottom-right-radius: 4px; }
+  .pd-msg.error { align-self: flex-start; background: #fdecea; color: #9b1c1c; border: 1px solid #f5c6c2; }
+  .pd-typing { align-self: flex-start; color: #888; font-size: 13px; font-style: italic; padding: 4px 6px; }
+
+  #pd-inputbar { flex: 0 0 auto; display: flex; gap: 8px; padding: 10px; border-top: 1px solid #e3e8eb; background: #fff; }
+  #pd-input {
+    flex: 1; border: 1px solid #cfd8dc; border-radius: 20px; padding: 9px 14px; font-size: 14px; outline: none;
+  }
+  #pd-input:focus { border-color: var(--pd-accent); }
+  #pd-send {
+    border: none; background: var(--pd-accent); color: #fff; border-radius: 50%;
+    width: 40px; height: 40px; cursor: pointer; font-size: 18px; flex: 0 0 auto;
+  }
+  #pd-send:hover { background: var(--pd-accent-dark); }
+  #pd-send:disabled { opacity: .5; cursor: default; }
+
+  @media (max-width: 480px) {
+    #pd-chat { right: 12px; bottom: 12px; }
+    #pd-panel { width: calc(100vw - 24px); height: calc(100vh - 90px); bottom: 70px; }
+  }
+</style>
+</head>
+<body>
+  <div class="pd-demo-note">
+    <h1>Puerto Delfín · página de prueba</h1>
+    <p>Widget de chat abajo a la derecha 🐬. Esta página es solo para testear; el snippet del widget (bloque <code>#pd-chat</code> + <code>&lt;style&gt;</code> + <code>&lt;script&gt;</code>) se pega tal cual en la página real.</p>
+  </div>
+
+  <!-- ===== Widget markup ===== -->
+  <div id="pd-chat" aria-live="polite">
+    <button id="pd-bubble" type="button" aria-label="Abrir chat">💬</button>
+    <div id="pd-panel" role="dialog" aria-label="Chat Puerto Delfín">
+      <div id="pd-header">
+        <div>
+          <h3>Puerto Delfín 🐬</h3>
+          <span>Asistente virtual</span>
+        </div>
+        <button id="pd-close" type="button" aria-label="Cerrar chat">&times;</button>
+      </div>
+      <div id="pd-messages"></div>
+      <div id="pd-inputbar">
+        <input id="pd-input" type="text" placeholder="Escribí tu mensaje…" autocomplete="off" aria-label="Mensaje">
+        <button id="pd-send" type="button" aria-label="Enviar">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Widget logic (vanilla, addEventListener only) ===== -->
+  <script>
+  (function () {
+    "use strict";
+
+    var ENDPOINT = "https://automation.alulahostel.com.ar/webhook/puerto-delfin-bot-web";
+    var SESSION_KEY = "pd_chat_session";
+    var GREETING = "¡Hola! Soy el asistente de Puerto Delfín 🐬 ¿En qué te ayudo?";
+
+    // --- session id (persisted) ---
+    var idExterno = localStorage.getItem(SESSION_KEY);
+    if (!idExterno) {
+      idExterno = crypto.randomUUID();
+      localStorage.setItem(SESSION_KEY, idExterno);
+    }
+
+    // --- state ---
+    var messages = [];      // {rol:'user'|'bot'|'error', texto}
+    var greeted = false;
+    var sending = false;
+
+    // --- elements ---
+    var chat     = document.getElementById("pd-chat");
+    var bubble   = document.getElementById("pd-bubble");
+    var closeBtn = document.getElementById("pd-close");
+    var listEl   = document.getElementById("pd-messages");
+    var inputEl  = document.getElementById("pd-input");
+    var sendBtn  = document.getElementById("pd-send");
+
+    function scrollDown() { listEl.scrollTop = listEl.scrollHeight; }
+
+    function renderMsg(rol, texto) {
+      var div = document.createElement("div");
+      div.className = "pd-msg " + rol;
+      div.textContent = texto;
+      listEl.appendChild(div);
+      scrollDown();
+    }
+
+    function addMessage(rol, texto) {
+      messages.push({ rol: rol, texto: texto });
+      renderMsg(rol, texto);
+    }
+
+    function showTyping() {
+      var t = document.createElement("div");
+      t.className = "pd-typing";
+      t.id = "pd-typing";
+      t.textContent = "escribiendo…";
+      listEl.appendChild(t);
+      scrollDown();
+    }
+    function hideTyping() {
+      var t = document.getElementById("pd-typing");
+      if (t) t.remove();
+    }
+
+    function openPanel() {
+      chat.classList.add("pd-open");
+      if (!greeted) {
+        addMessage("bot", GREETING);
+        greeted = true;
+      }
+      inputEl.focus();
+    }
+    function closePanel() { chat.classList.remove("pd-open"); }
+
+    async function send() {
+      var texto = inputEl.value.trim();
+      if (!texto || sending) return;
+
+      sending = true;
+      sendBtn.disabled = true;
+      inputEl.value = "";
+      addMessage("user", texto);
+      showTyping();
+
+      try {
+        var res = await fetch(ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idExterno: idExterno, texto: texto })
+        });
+        hideTyping();
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        var data = await res.json();
+        addMessage("bot", data.reply || "(sin respuesta)");
+      } catch (err) {
+        hideTyping();
+        addMessage("error", "No pude conectar, probá de nuevo en un momento");
+        console.error("[pd-chat] error al enviar:", err);
+      } finally {
+        sending = false;
+        sendBtn.disabled = false;
+        inputEl.focus();
+      }
+    }
+
+    // --- listeners (no inline handlers) ---
+    bubble.addEventListener("click", function () {
+      if (chat.classList.contains("pd-open")) { closePanel(); } else { openPanel(); }
+    });
+    closeBtn.addEventListener("click", closePanel);
+    sendBtn.addEventListener("click", send);
+    inputEl.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+    });
+
+    // expose session id for debugging/tests
+    window.__pdSession = function () { return idExterno; };
+  })();
+  </script>
+</body>
+</html>

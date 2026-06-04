@@ -403,6 +403,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);min-h
 .empty{text-align:center;padding:40px;color:var(--t3);}
 .empty-icon{font-size:32px;margin-bottom:10px;}
 .empty-text{font-size:13px;}
+
+/* CONV THREAD */
+.conv{cursor:pointer;}
+.conv.sel{background:var(--border2);}
+#thread-msgs{display:flex;flex-direction:column;gap:8px;padding:6px;}
+.tmsg{max-width:80%;padding:8px 11px;border-radius:12px;font-size:13px;line-height:1.4;white-space:pre-wrap;word-wrap:break-word;}
+.tmsg.user{align-self:flex-end;background:var(--a1);color:#fff;border-bottom-right-radius:4px;}
+.tmsg.bot{align-self:flex-start;background:var(--border2);color:var(--t1);border-bottom-left-radius:4px;}
+.tmsg.operador{align-self:flex-start;background:#f59e0b;color:#fff;border-bottom-left-radius:4px;}
+.tmsg-rol{font-size:9px;text-transform:uppercase;opacity:.7;margin-bottom:2px;letter-spacing:.5px;}
+.tmsg-ts{font-size:9px;opacity:.6;margin-top:3px;text-align:right;}
 </style>
 </head>
 <body>
@@ -574,8 +585,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);min-h
           <div class="tab" onclick="filterConvs('humano',this)">Humano</div>
           <div class="tab" onclick="filterConvs('pendiente',this)">Sin resolver</div>
         </div>
-        <div class="card">
-          <div class="scroll" style="max-height:500px" id="convs-list"></div>
+        <div class="g2" style="grid-template-columns:1fr 1.2fr;align-items:start">
+          <div class="card">
+            <div class="scroll" style="max-height:540px" id="convs-list"></div>
+          </div>
+          <div class="card" id="thread-panel" style="display:none">
+            <div class="card-h"><div class="card-title" id="thread-title">Conversación</div></div>
+            <div class="scroll" style="max-height:500px" id="thread-msgs"></div>
+          </div>
         </div>
       </div>
 
@@ -843,6 +860,10 @@ let currentUser = null;
 let clients = {};
 let kbFilter = 'faq';
 let convsFilter = 'todas';
+let convsUnsub = null;     // detach fn del onValue de conversaciones
+let threadUnsub = null;    // detach fn del onValue de mensajes
+let currentConv = null;    // convId del hilo abierto
+let convsMap = {};         // último snapshot {convId: conv} para metadata
 
 // ---- AUTH ----
 window.doLogin = async () => {
@@ -972,17 +993,7 @@ async function seedDemoData() {
   for(const item of kbDemo) {
     await push(ref(db, 'clientes/puerto-delfin/conocimiento'), item);
   }
-  // seed conversaciones
-  const convsDemo = [
-    { nombre:'María González', preview:'¿Tienen disponibilidad para el finde largo?', canal:'whatsapp', estado:'bot', hora:'14:32', color:'#3b82f6' },
-    { nombre:'Juan Pérez', preview:'Quiero saber el precio de la cabaña para 4 personas', canal:'web', estado:'bot', hora:'13:15', color:'#ef4444' },
-    { nombre:'Ana López', preview:'Necesito modificar la fecha de mi reserva', canal:'whatsapp', estado:'humano', hora:'11:48', color:'#f59e0b' },
-    { nombre:'Carlos Rodríguez', preview:'¿Aceptan mascotas en las cabañas pequeñas?', canal:'web', estado:'resuelto', hora:'10:20', color:'#10b981' },
-    { nombre:'Laura Martínez', preview:'¿Tienen WiFi en todas las cabañas?', canal:'whatsapp', estado:'pendiente', hora:'09:05', color:'#8b5cf6' },
-  ];
-  for(const c of convsDemo) {
-    await push(ref(db, 'clientes/puerto-delfin/conversaciones'), c);
-  }
+  // (seed de conversaciones desactivado: n8n escribe las conversaciones/mensajes reales)
   // seed log
   const logDemo = [
     { quien:'admin@botcontrol.app', accion:'Creó cliente Puerto Delfín', tipo:'create', ts: Date.now()-3600000 },
@@ -1011,6 +1022,7 @@ function renderClientSidebar() {
   }
 }
 
+window.selectClient = selectClient;
 function selectClient(id) {
   currentClient = id;
   const c = clients[id];
@@ -1065,8 +1077,8 @@ async function loadDashConvs() {
   const snap = await get(ref(db, `clientes/${currentClient}/conversaciones`));
   const container = document.getElementById('dash-convs');
   if(!snap.exists()){container.innerHTML='<div class="empty"><div class="empty-icon">💬</div><div class="empty-text">Sin conversaciones</div></div>';return;}
-  const items = Object.values(snap.val()).slice(0,4);
-  container.innerHTML = items.map(c=>convHTML(c)).join('');
+  const items = fbEntries(snap.val()).sort((a,b)=>(b[1].updatedAt||0)-(a[1].updatedAt||0)).slice(0,4);
+  container.innerHTML = items.map(([id,c])=>convHTML(id,c)).join('');
 }
 
 async function loadDashUnans() {
@@ -1243,53 +1255,121 @@ document.getElementById('ch-color')?.addEventListener('input', e => {
   document.getElementById('color-preview').style.background = e.target.value;
 });
 
-// ---- CONVERSACIONES ----
-function convHTML(c) {
-  const badges = {
-    bot: '<span class="badge badge-b">Bot</span>',
-    humano: '<span class="badge badge-y">Humano</span>',
-    resuelto: '<span class="badge badge-g">Resuelto</span>',
-    pendiente: '<span class="badge badge-r">Sin resp.</span>',
-  };
-  const canales = {
-    whatsapp: '<span class="badge badge-p" style="margin-left:6px;font-size:9px">📱 WA</span>',
-    web: '<span class="badge badge-b" style="margin-left:6px;font-size:9px">🌐 Web</span>',
-  };
-  return `<div class="conv">
-    <div class="conv-av" style="background:${c.color||'#666'}">${(c.nombre||'?').split(' ').map(w=>w[0]).join('').substring(0,2)}</div>
+// ---- CONVERSACIONES (realtime, solo lectura) ----
+// Forma defensiva de Firebase (array u objeto)
+function fbEntries(data){
+  if(Array.isArray(data)) return data.map((v,i)=>[String(i),v]).filter(([,v])=>v!=null);
+  return Object.entries(data||{});
+}
+function fbList(data){
+  return Array.isArray(data) ? data.filter(x=>x!=null) : Object.values(data||{});
+}
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function fmtHora(ts){
+  if(!ts) return '';
+  const d = new Date(typeof ts==='number'?ts:Number(ts));
+  if(isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+}
+
+function convHTML(id, c){
+  const initials = (c.nombre||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const canal = c.canal==='whatsapp'?' 📱':c.canal==='web'?' 🌐':'';
+  const rol = c.ultimoRol;
+  const rolBadge = rol==='bot' ? '<span class="badge badge-b">Bot</span>'
+    : rol==='operador' ? '<span class="badge badge-y">Operador</span>'
+    : rol==='user' ? '<span class="badge badge-g">Cliente</span>' : '';
+  const unread = (c.noLeidos>0) ? `<span class="badge badge-r" style="margin-left:6px">${c.noLeidos}</span>` : '';
+  return `<div class="conv${currentConv===id?' sel':''}" data-conv="${esc(id)}">
+    <div class="conv-av" style="background:${c.color||'#3b82f6'}">${esc(initials)}</div>
     <div style="flex:1;min-width:0">
-      <div class="conv-name">${c.nombre||'Desconocido'} ${canales[c.canal]||''}</div>
-      <div class="conv-prev">${c.preview||'...'}</div>
+      <div class="conv-name">${esc(c.nombre||'Visitante')}${canal}</div>
+      <div class="conv-prev">${esc(c.preview||'...')}</div>
     </div>
     <div class="conv-r">
-      <div class="conv-time">${c.hora||''}</div>
-      ${badges[c.estado]||''}
+      <div class="conv-time">${fmtHora(c.updatedAt)}</div>
+      ${rolBadge}${unread}
     </div>
   </div>`;
 }
 
-async function loadConversaciones() {
-  const snap = await get(ref(db, `clientes/${currentClient}/conversaciones`));
-  renderConvs(snap);
+function loadConversaciones(){
+  resetThread();
+  if(convsUnsub){ convsUnsub(); convsUnsub=null; }
+  if(!currentClient) return;
+  const r = ref(db, `clientes/${currentClient}/conversaciones`);
+  convsUnsub = onValue(r, snap => renderConvs(snap),
+    err => console.error('[convs] onValue error:', err));
 }
 
-function renderConvs(snap) {
+function renderConvs(snap){
   const container = document.getElementById('convs-list');
-  if(!snap||!snap.exists()){
-    container.innerHTML='<div class="empty"><div class="empty-icon">💬</div><div class="empty-text">Sin conversaciones todavía</div></div>';
+  let entries = (snap && snap.exists()) ? fbEntries(snap.val()) : [];
+  convsMap = Object.fromEntries(entries);
+  // orden por updatedAt desc
+  entries.sort((a,b)=>(b[1].updatedAt||0)-(a[1].updatedAt||0));
+  // filtros de tabs adaptados al modelo nuevo
+  if(convsFilter==='bot')       entries = entries.filter(([,c])=>c.ultimoRol==='bot');
+  else if(convsFilter==='humano')   entries = entries.filter(([,c])=>c.ultimoRol==='operador');
+  else if(convsFilter==='pendiente') entries = entries.filter(([,c])=>c.noLeidos>0);
+  if(!entries.length){
+    container.innerHTML = '<div class="empty"><div class="empty-icon">💬</div><div class="empty-text">Sin conversaciones todavía</div></div>';
     return;
   }
-  let items = Object.values(snap.val());
-  if(convsFilter!=='todas') items = items.filter(c=>c.estado===convsFilter);
-  container.innerHTML = items.length ? items.map(c=>convHTML(c)).join('') :
-    '<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">Sin conversaciones con este filtro</div></div>';
+  container.innerHTML = entries.map(([id,c])=>convHTML(id,c)).join('');
+  container.querySelectorAll('.conv').forEach(el=>{
+    el.addEventListener('click', ()=>openThread(el.dataset.conv));
+  });
+}
+
+function openThread(convId){
+  if(!convId) return;
+  currentConv = convId;
+  document.querySelectorAll('#convs-list .conv').forEach(el=>el.classList.toggle('sel', el.dataset.conv===convId));
+  const meta = convsMap[convId] || {};
+  document.getElementById('thread-title').textContent = meta.nombre || convId;
+  document.getElementById('thread-panel').style.display = 'block';
+  document.getElementById('thread-msgs').innerHTML = '<div class="empty"><div class="empty-text">Cargando…</div></div>';
+  if(threadUnsub){ threadUnsub(); threadUnsub=null; }
+  const r = ref(db, `clientes/${currentClient}/mensajes/${convId}`);
+  threadUnsub = onValue(r, snap => renderThread(snap),
+    err => console.error('[thread] onValue error:', err));
+}
+
+function renderThread(snap){
+  const box = document.getElementById('thread-msgs');
+  const msgs = (snap && snap.exists()) ? fbList(snap.val()) : [];
+  msgs.sort((a,b)=>(a.ts||0)-(b.ts||0));   // cronológico por ts
+  if(!msgs.length){
+    box.innerHTML = '<div class="empty"><div class="empty-icon">💬</div><div class="empty-text">Sin mensajes</div></div>';
+    return;
+  }
+  const label = { user:'Cliente', bot:'Bot', operador:'Operador' };
+  box.innerHTML = msgs.map(m=>{
+    const cls = m.rol==='user'?'user':m.rol==='operador'?'operador':'bot';
+    return `<div class="tmsg ${cls}">
+      <div class="tmsg-rol">${label[m.rol]||esc(m.rol||'bot')}</div>
+      <div class="tmsg-txt">${esc(m.texto||'')}</div>
+      <div class="tmsg-ts">${fmtHora(m.ts)}</div>
+    </div>`;
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+function resetThread(){
+  if(threadUnsub){ threadUnsub(); threadUnsub=null; }
+  currentConv = null;
+  const panel = document.getElementById('thread-panel');
+  if(panel) panel.style.display = 'none';
 }
 
 window.filterConvs = (f, el) => {
   convsFilter = f;
   document.querySelectorAll('#page-conversaciones .tab').forEach(t=>t.classList.remove('on'));
-  el.classList.add('on');
-  loadConversaciones();
+  if(el) el.classList.add('on');
+  loadConversaciones();   // re-suscribe y re-renderiza con el filtro nuevo
 };
 
 // ---- ROLES ----

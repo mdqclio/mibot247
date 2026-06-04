@@ -590,8 +590,18 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);min-h
             <div class="scroll" style="max-height:540px" id="convs-list"></div>
           </div>
           <div class="card" id="thread-panel" style="display:none">
-            <div class="card-h"><div class="card-title" id="thread-title">Conversación</div></div>
-            <div class="scroll" style="max-height:500px" id="thread-msgs"></div>
+            <div class="card-h">
+              <div class="card-title" id="thread-title">Conversación</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span id="pause-label" style="font-size:11px;color:var(--t2)">Bot activo</span>
+                <div class="toggle off" id="pause-toggle" role="switch" aria-checked="false" tabindex="0" title="Pausar / reactivar bot"></div>
+              </div>
+            </div>
+            <div class="scroll" style="max-height:440px" id="thread-msgs"></div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <input class="finput" id="op-input" placeholder="Responder como operador…" autocomplete="off" style="flex:1" />
+              <button class="btn btn-p btn-sm" id="op-send">Enviar</button>
+            </div>
           </div>
         </div>
       </div>
@@ -864,6 +874,8 @@ let convsUnsub = null;     // detach fn del onValue de conversaciones
 let threadUnsub = null;    // detach fn del onValue de mensajes
 let currentConv = null;    // convId del hilo abierto
 let convsMap = {};         // último snapshot {convId: conv} para metadata
+let pauseUnsub = null;     // detach fn del onValue de botPausado
+let currentPaused = false; // estado de pausa del hilo abierto
 
 // ---- AUTH ----
 window.doLogin = async () => {
@@ -1336,6 +1348,47 @@ function openThread(convId){
   const r = ref(db, `clientes/${currentClient}/mensajes/${convId}`);
   threadUnsub = onValue(r, snap => renderThread(snap),
     err => console.error('[thread] onValue error:', err));
+  // marcar leído al abrir
+  update(ref(db, `clientes/${currentClient}/conversaciones/${convId}`), { noLeidos: 0 })
+    .catch(e => console.error('[noLeidos] update:', e));
+  // estado de pausa en tiempo real
+  if(pauseUnsub){ pauseUnsub(); pauseUnsub=null; }
+  pauseUnsub = onValue(ref(db, `clientes/${currentClient}/conversaciones/${convId}/botPausado`),
+    s => updatePauseUI(s.val()===true),
+    e => console.error('[pause] onValue error:', e));
+}
+
+function updatePauseUI(paused){
+  currentPaused = !!paused;
+  const t = document.getElementById('pause-toggle');
+  const l = document.getElementById('pause-label');
+  if(t){ t.classList.toggle('on', currentPaused); t.classList.toggle('off', !currentPaused); t.setAttribute('aria-checked', String(currentPaused)); }
+  if(l){ l.textContent = currentPaused ? 'Bot pausado' : 'Bot activo'; }
+}
+
+function togglePausa(){
+  if(!currentConv || !currentClient) return;
+  const nv = !currentPaused;
+  set(ref(db, `clientes/${currentClient}/conversaciones/${currentConv}/botPausado`), nv)
+    .catch(e => console.error('[pause] set:', e));   // la UI se refresca por onValue
+}
+
+async function sendOperador(){
+  const inp = document.getElementById('op-input');
+  const texto = (inp.value||'').trim();
+  if(!texto || !currentConv || !currentClient) return;
+  const ts = Date.now();
+  const uid = currentUser ? currentUser.uid : null;
+  inp.value = '';
+  try{
+    await push(ref(db, `clientes/${currentClient}/mensajes/${currentConv}`),
+      { rol:'operador', texto, ts, operadorUid: uid });
+    await update(ref(db, `clientes/${currentClient}/conversaciones/${currentConv}`),
+      { preview: texto, ultimoRol:'operador', updatedAt: ts, botPausado: true });  // auto-pausa
+  }catch(e){
+    console.error('[operador] envío:', e);
+    showToast('No se pudo enviar la respuesta', '⚠️');
+  }
 }
 
 function renderThread(snap){
@@ -1360,10 +1413,24 @@ function renderThread(snap){
 
 function resetThread(){
   if(threadUnsub){ threadUnsub(); threadUnsub=null; }
+  if(pauseUnsub){ pauseUnsub(); pauseUnsub=null; }
   currentConv = null;
+  currentPaused = false;
   const panel = document.getElementById('thread-panel');
   if(panel) panel.style.display = 'none';
+  const inp = document.getElementById('op-input');
+  if(inp) inp.value = '';
 }
+
+// listeners del hilo (estáticos, se enganchan una vez; sin handlers inline)
+document.getElementById('pause-toggle')?.addEventListener('click', togglePausa);
+document.getElementById('pause-toggle')?.addEventListener('keydown', e=>{
+  if(e.key==='Enter' || e.key===' '){ e.preventDefault(); togglePausa(); }
+});
+document.getElementById('op-send')?.addEventListener('click', sendOperador);
+document.getElementById('op-input')?.addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); sendOperador(); }
+});
 
 window.filterConvs = (f, el) => {
   convsFilter = f;

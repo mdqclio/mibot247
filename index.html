@@ -1371,7 +1371,7 @@ function openThread(convId){
   currentConv = convId;
   document.querySelectorAll('#convs-list .conv').forEach(el=>el.classList.toggle('sel', el.dataset.conv===convId));
   const meta = convsMap[convId] || {};
-  document.getElementById('thread-title').textContent = meta.nombre || convId;
+  document.getElementById('thread-title').textContent = meta.nombre || 'Visitante';
   document.getElementById('thread-panel').style.display = 'block';
   document.getElementById('thread-msgs').innerHTML = '<div class="empty"><div class="empty-text">Cargando…</div></div>';
   if(threadUnsub){ threadUnsub(); threadUnsub=null; }

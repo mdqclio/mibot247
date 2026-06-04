@@ -1319,6 +1319,7 @@ function fmtHora(ts){
 function convHTML(id, c){
   const initials = (c.nombre||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
   const canal = c.canal==='whatsapp'?' 📱':c.canal==='web'?' 🌐':'';
+  const deviceIc = c.device==='mobile'?' 📱':c.device==='desktop'?' 💻':'';  // sin icono si falta/otro
   const rol = c.ultimoRol;
   const rolBadge = rol==='bot' ? '<span class="badge badge-b">Bot</span>'
     : rol==='operador' ? '<span class="badge badge-y">Operador</span>'
@@ -1327,7 +1328,7 @@ function convHTML(id, c){
   return `<div class="conv${currentConv===id?' sel':''}" data-conv="${esc(id)}">
     <div class="conv-av" style="background:${c.color||'#3b82f6'}">${esc(initials)}</div>
     <div style="flex:1;min-width:0">
-      <div class="conv-name">${esc(c.nombre||'Visitante')}${canal}</div>
+      <div class="conv-name">${esc(c.nombre||'Visitante')}${canal}<span style="opacity:.7">${deviceIc}</span></div>
       <div class="conv-prev">${esc(c.preview||'...')}</div>
     </div>
     <div class="conv-r">

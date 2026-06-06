@@ -1,0 +1,28 @@
+# Dependencias
+node_modules/
+
+# Firebase
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+*-debug.log
+.runtimeconfig.json
+
+# Entorno / secretos (no commitear credenciales reales)
+.env
+.env.*
+!.env.example
+*.local
+
+# Editor / SO
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Logs
+logs/
+*.log
+npm-debug.log*

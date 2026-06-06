@@ -1101,8 +1101,8 @@ function renderClientSidebar() {
     div.className = 'cc' + (currentClient===id?' sel':'');
     div.setAttribute('data-id', id);
     div.innerHTML = `
-      <div class="cc-dot" style="background:${c.color||'#666'}"></div>
-      <div class="cc-name">${c.nombre}</div>
+      <div class="cc-dot" style="background:${esc(c.color||'#666')}"></div>
+      <div class="cc-name">${esc(c.nombre)}</div>
       <div class="cc-on ${c.activo?'y':'n'}">${c.activo?'ON':'OFF'}</div>`;
     div.onclick = () => selectClient(id);
     list.appendChild(div);
@@ -1174,12 +1174,16 @@ async function loadDashUnans() {
     {text:'¿Cuánto sale el transfer desde MDP?', count:2},
     {text:'¿Tienen WiFi en todas las cabañas?', count:2},
   ];
-  document.getElementById('dash-unans').innerHTML = unans.map(u=>`
+  const cont = document.getElementById('dash-unans');
+  cont.innerHTML = unans.map(u=>`
     <div class="unans">
-      <div class="unans-text">${u.text}</div>
-      <div class="unans-count">×${u.count}</div>
-      <button class="btn-add-kb" onclick="prefillKB('${u.text}')">+ Agregar</button>
+      <div class="unans-text">${esc(u.text)}</div>
+      <div class="unans-count">×${esc(u.count)}</div>
+      <button class="btn-add-kb" data-text="${esc(u.text)}">+ Agregar</button>
     </div>`).join('');
+  cont.querySelectorAll('.btn-add-kb').forEach(b=>{
+    b.addEventListener('click', ()=>prefillKB(b.dataset.text));
+  });
 }
 
 // ---- KB ----
@@ -1198,18 +1202,28 @@ async function loadKB() {
     container.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">Sin entradas de este tipo</div></div>';
     return;
   }
+  const safeTipo = t => (t==='url'||t==='doc'||t==='faq') ? t : 'faq';
   container.innerHTML = filtered.map(([id,item])=>`
     <div class="kb-item">
-      <div class="kb-ic ${item.tipo||'faq'}">${item.tipo==='url'?'🔗':item.tipo==='doc'?'📄':'❓'}</div>
+      <div class="kb-ic ${safeTipo(item.tipo)}">${item.tipo==='url'?'🔗':item.tipo==='doc'?'📄':'❓'}</div>
       <div class="kb-body">
-        <div class="kb-title">${item.pregunta}</div>
-        <div class="kb-meta">${item.tipo?.toUpperCase()||'FAQ'} · ${item.tags||'sin tags'}</div>
+        <div class="kb-title">${esc(item.pregunta)}</div>
+        <div class="kb-meta">${esc(item.tipo?.toUpperCase()||'FAQ')} · ${esc(item.tags||'sin tags')}</div>
       </div>
       <div class="kb-acts">
-        <button class="ib" onclick="editKB('${id}','${item.pregunta.replace(/'/g,"\\'")}','${item.respuesta?.replace(/'/g,"\\'")||''}')">✏️</button>
-        <button class="ib" onclick="deleteKB('${id}')">🗑️</button>
+        <button class="ib kb-edit" data-id="${esc(id)}">✏️</button>
+        <button class="ib kb-del" data-id="${esc(id)}">🗑️</button>
       </div>
     </div>`).join('');
+  container.querySelectorAll('.kb-edit').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const [,item] = filtered.find(([fid])=>fid===b.dataset.id) || [null,{}];
+      editKB(b.dataset.id, item?.pregunta||'', item?.respuesta||'');
+    });
+  });
+  container.querySelectorAll('.kb-del').forEach(b=>{
+    b.addEventListener('click', ()=>deleteKB(b.dataset.id));
+  });
 }
 
 window.saveKB = async () => {
@@ -1585,12 +1599,15 @@ async function loadRoles() {
   for(const [role, permsObj] of Object.entries(roles)) {
     const card = document.createElement('div');
     card.className = 'role-card';
-    card.innerHTML = `<div class="role-name"><span class="badge ${role==='admin'?'badge-y':'badge-g'}">${roleNames[role]||role}</span></div>` +
+    card.innerHTML = `<div class="role-name"><span class="badge ${role==='admin'?'badge-y':'badge-g'}">${esc(roleNames[role]||role)}</span></div>` +
       perms.map(p=>`
         <div class="perm-row">
-          <span>${p.label}</span>
-          <div class="toggle ${permsObj[p.key]?'on':'off'}" onclick="toggleRole('${role}','${p.key}',this)"></div>
+          <span>${esc(p.label)}</span>
+          <div class="toggle ${permsObj[p.key]?'on':'off'}" data-role="${esc(role)}" data-key="${esc(p.key)}"></div>
         </div>`).join('');
+    card.querySelectorAll('.toggle[data-role]').forEach(t=>{
+      t.addEventListener('click', ()=>toggleRole(t.dataset.role, t.dataset.key, t));
+    });
     container.appendChild(card);
   }
 }
@@ -1649,7 +1666,7 @@ async function loadLog() {
   container.innerHTML = items.map(l=>`
     <div class="log-item">
       <div class="log-dot" style="background:${colors[l.tipo]||'var(--t3)'}"></div>
-      <div class="log-text"><strong>${l.accion}</strong><br><span style="font-size:10.5px;color:var(--t3)">${l.quien}</span></div>
+      <div class="log-text"><strong>${esc(l.accion)}</strong><br><span style="font-size:10.5px;color:var(--t3)">${esc(l.quien)}</span></div>
       <div class="log-time">${new Date(l.ts).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
     </div>`).join('');
 }
@@ -1678,20 +1695,26 @@ async function renderClientsPage() {
   tbody.innerHTML = Object.entries(all).map(([id,c])=>`
     <tr>
       <td><div style="display:flex;align-items:center;gap:8px">
-        <div style="width:8px;height:8px;border-radius:50%;background:${c.color||'#666'}"></div>
-        <strong>${c.nombre}</strong>
+        <div style="width:8px;height:8px;border-radius:50%;background:${esc(c.color||'#666')}"></div>
+        <strong>${esc(c.nombre)}</strong>
       </div></td>
-      <td>${c.config?.bot_nombre||'—'}</td>
+      <td>${esc(c.config?.bot_nombre||'—')}</td>
       <td><span class="badge ${c.activo?'badge-g':'badge-r'}">${c.activo?'Activo':'Inactivo'}</span></td>
       <td><span style="font-size:11px">📱 WA · 🌐 Web</span></td>
-      <td><span class="badge badge-b">${c.plan||'básico'}</span></td>
+      <td><span class="badge badge-b">${esc(c.plan||'básico')}</span></td>
       <td style="display:flex;gap:5px;">
-        <button class="btn btn-g btn-sm" onclick="selectClient('${id}');goPage('configuracion',null)">Editar</button>
-        <button class="btn btn-d btn-sm" onclick="toggleClientStatus('${id}')">
+        <button class="btn btn-g btn-sm cl-edit" data-id="${esc(id)}">Editar</button>
+        <button class="btn btn-d btn-sm cl-toggle" data-id="${esc(id)}">
           ${c.activo?'Desactivar':'Activar'}
         </button>
       </td>
     </tr>`).join('');
+  tbody.querySelectorAll('.cl-edit').forEach(b=>{
+    b.addEventListener('click', ()=>{ selectClient(b.dataset.id); goPage('configuracion', null); });
+  });
+  tbody.querySelectorAll('.cl-toggle').forEach(b=>{
+    b.addEventListener('click', ()=>toggleClientStatus(b.dataset.id));
+  });
 }
 
 window.toggleClientStatus = async (id) => {
@@ -1768,7 +1791,7 @@ window.sendSandbox = () => {
   const msgs = document.getElementById('sandbox-messages');
   const text = input.value.trim();
   if(!text) return;
-  msgs.innerHTML += `<div style="text-align:right;margin-bottom:8px"><span style="background:var(--a1);color:#fff;padding:5px 10px;border-radius:12px 12px 0 12px;display:inline-block;max-width:80%">${text}</span></div>`;
+  msgs.innerHTML += `<div style="text-align:right;margin-bottom:8px"><span style="background:var(--a1);color:#fff;padding:5px 10px;border-radius:12px 12px 0 12px;display:inline-block;max-width:80%">${esc(text)}</span></div>`;
   input.value = '';
   setTimeout(()=>{
     msgs.innerHTML += `<div style="margin-bottom:8px"><span style="background:var(--s4);padding:5px 10px;border-radius:12px 12px 12px 0;display:inline-block;max-width:80%;font-size:12.5px">Hola, soy el bot en modo prueba 🧪 Esta respuesta vendría de Groq + tu base de conocimiento. Pronto estará conectado al motor real.</span></div>`;
